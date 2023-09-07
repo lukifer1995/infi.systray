@@ -37,12 +37,8 @@ class SysTrayIcon(object):
         self._hover_text = hover_text
         self._on_quit = on_quit
 
-        menu_options = menu_options or ()
-        menu_options = menu_options + (('Quit', None, SysTrayIcon.QUIT),)
-        self._next_action_id = SysTrayIcon.FIRST_ID
-        self._menu_actions_by_id = set()
-        self._menu_options = self._add_ids_to_menu_options(list(menu_options))
-        self._menu_actions_by_id = dict(self._menu_actions_by_id)
+        self._menu = None
+        self._set_menu_options(menu_options)
 
         window_class_name = window_class_name or ("SysTrayIconPy-%s" % (str(uuid.uuid4())))
 
@@ -59,7 +55,6 @@ class SysTrayIcon(object):
         self._hicon = 0
         self._hinst = None
         self._window_class = None
-        self._menu = None
         self._register_class()
 
     def __enter__(self):
@@ -122,14 +117,31 @@ class SysTrayIcon(object):
         PostMessage(self._hwnd, WM_CLOSE, 0, 0)
         self._message_loop_thread.join()
 
-    def update(self, icon=None, hover_text=None):
-        """ update icon image and/or hover text """
+    def update(self, icon=None, hover_text=None, menu_options=None):
+        """ update icon image and/or hover text and/or menu options """
+        icon_refresh_needed = False
         if icon:
             self._icon = icon
             self._load_icon()
+            icon_refresh_needed = True
         if hover_text:
             self._hover_text = hover_text
-        self._refresh_icon()
+            icon_refresh_needed = True
+        if icon_refresh_needed:
+            self._refresh_icon()
+        if menu_options:
+            self._set_menu_options(menu_options)
+
+    def _set_menu_options(self, menu_options):
+        if self._menu is not None:
+            DestroyMenu(self._menu)
+        menu_options = menu_options or ()
+        menu_options = menu_options + (('Quit', None, SysTrayIcon.QUIT),)
+        self._next_action_id = SysTrayIcon.FIRST_ID
+        self._menu_actions_by_id = set()
+        self._menu_options = self._add_ids_to_menu_options(list(menu_options))
+        self._menu_actions_by_id = dict(self._menu_actions_by_id)
+        self._menu = None
 
     def _add_ids_to_menu_options(self, menu_options):
         result = []
@@ -159,10 +171,9 @@ class SysTrayIcon(object):
         # Try and find a custom icon
         hicon = 0
         if self._icon is not None and os.path.isfile(self._icon):
-            ico_x = GetSystemMetrics(SM_CXSMICON)
-            ico_y = GetSystemMetrics(SM_CYSMICON)
+            icon_flags = LR_LOADFROMFILE | LR_DEFAULTSIZE
             icon = encode_for_locale(self._icon)
-            hicon = self._hicon = LoadImage(0, icon, IMAGE_ICON, ico_x, ico_y, LR_LOADFROMFILE)
+            hicon = self._hicon = LoadImage(0, icon, IMAGE_ICON, 0, 0, icon_flags)
             self._icon_shared = False
 
         # Can't find icon file - using default shared icon
@@ -197,20 +208,27 @@ class SysTrayIcon(object):
         nid = NotifyData(self._hwnd, 0)
         Shell_NotifyIcon(NIM_DELETE, ctypes.byref(nid))
         PostQuitMessage(0)  # Terminate the app.
-        # TODO * release self._menu with DestroyMenu and reset the memeber
-        #      * release self._hicon with DestoryIcon and reset the member
-        #      * release loaded menu icons (loaded in _load_menu_icon) with DeleteObject
+        if self._menu is not None:
+            DestroyMenu(self._menu)
+            self._menu = None
+        if self._hicon != 0:
+            DestroyIcon(self._hicon)
+            self._hicon = 0
+        # TODO * release loaded menu icons (loaded in _load_menu_icon) with DeleteObject
         #        (we don't keep those objects anywhere now)
         self._hwnd = None
         self._notify_id = None
 
     def _notify(self, hwnd, msg, wparam, lparam):
         if lparam == WM_LBUTTONDBLCLK:
-            self._execute_menu_option(self._default_menu_index + SysTrayIcon.FIRST_ID)
+            # self._execute_menu_option(self._default_menu_index + SysTrayIcon.FIRST_ID)
+            path_sublime= 'C:\\Eol\\Apps\\\"Sublime Text 3"\\sublime_text.exe '                  # Eol: add action to open script instead Setting
+            path_FilePy=  '"C:\\Users\\Eol\\Desktop\\TrayCommands.pyw"'
+            os.system('start '+ path_sublime + path_FilePy)
         elif lparam == WM_RBUTTONUP:
             self._show_menu()
-        elif lparam == WM_LBUTTONUP:
-            pass
+        elif lparam == WM_LBUTTONUP:                                                             # Eol : ADD right click to open menu
+            self._show_menu()
         return True
 
     def _show_menu(self):

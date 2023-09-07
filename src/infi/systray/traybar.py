@@ -222,12 +222,15 @@ class SysTrayIcon(object):
     def _notify(self, hwnd, msg, wparam, lparam):
         if lparam == WM_LBUTTONDBLCLK:
             # self._execute_menu_option(self._default_menu_index + SysTrayIcon.FIRST_ID)
-            path_sublime= 'C:\\Eol\\Apps\\\"Sublime Text 3"\\sublime_text.exe '                  # Eol: add action to open script instead Setting
+            # Eol: add action to Edit code instead Setting
+            path_sublime= 'C:\\Eol\\Apps\\\"Sublime Text 3"\\sublime_text.exe '
             path_FilePy=  '"C:\\Users\\Eol\\Desktop\\TrayCommands.pyw"'
             os.system('start '+ path_sublime + path_FilePy)
+        
+        # Eol : add right click to open menu
         elif lparam == WM_RBUTTONUP:
             self._show_menu()
-        elif lparam == WM_LBUTTONUP:                                                             # Eol : ADD right click to open menu
+        elif lparam == WM_LBUTTONUP:
             self._show_menu()
         return True
 

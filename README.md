@@ -118,4 +118,9 @@ To run this code from the repository for development purposes, run the following
 ```
 easy_install -U infi.projector
 projector devenv build
+# add update menu Option
+sysTrayIcon.update(menu_options=menu_options_NEW)
+# add left click menu
+# add double click edit code
 ```
+

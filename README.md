@@ -13,7 +13,7 @@ pip install infi.systray
 Alternatively, you can use easy_install.
 
 
-## What new
+## What modify by Eol
 ```
 # add update menu Option
 sysTrayIcon.update(menu_options=menu_options_NEW)
